@@ -79,6 +79,7 @@ set(TEST_SRCS
   src/simplicial-complex-operators.cpp
   src/test-sco.cpp
 )
+set(GC_EIGEN_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/../../../eigen" CACHE PATH "eigen path")
 add_subdirectory(../../deps/geometry-central deps/geometry-central)
 add_subdirectory(../../deps/polyscope deps/polyscope)
 add_subdirectory(../../deps/googletest deps/googletest)
