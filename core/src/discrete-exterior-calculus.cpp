@@ -43,7 +43,19 @@ namespace surface {
 SparseMatrix<double> VertexPositionGeometry::buildHodgeStar0Form() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nVertices = mesh.nVertices();
+    SparseMatrix<double> h0(nVertices, nVertices);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Vertex v : mesh.vertices()) {
+        size_t idx = v.getIndex();
+        double dualArea = barycentricDualArea(v);
+        triplets.push_back(Eigen::Triplet<double>(idx, idx, dualArea));
+    }
+
+    h0.setFromTriplets(triplets.begin(), triplets.end());
+    return h0;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 /*
@@ -55,7 +67,22 @@ SparseMatrix<double> VertexPositionGeometry::buildHodgeStar0Form() const {
 SparseMatrix<double> VertexPositionGeometry::buildHodgeStar1Form() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nEdges = mesh.nEdges();
+    SparseMatrix<double> h1(nEdges, nEdges);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Edge e : mesh.edges()) {
+        size_t idx = e.getIndex();
+        Halfedge he1, he2;
+        he1 = e.halfedge();
+        he2 = he1.twin();
+        double ratio = (cotan(he1) + cotan(he2)) / 2.0;
+        triplets.push_back(Eigen::Triplet<double>(idx, idx, ratio));
+    }
+
+    h1.setFromTriplets(triplets.begin(), triplets.end());
+    return h1;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 /*
@@ -67,7 +94,19 @@ SparseMatrix<double> VertexPositionGeometry::buildHodgeStar1Form() const {
 SparseMatrix<double> VertexPositionGeometry::buildHodgeStar2Form() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nFaces = mesh.nFaces();
+    SparseMatrix<double> h2(nFaces, nFaces);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Face f : mesh.faces()) {
+        size_t idx = f.getIndex();
+        double area = faceArea(f);
+        triplets.push_back(Eigen::Triplet<double>(idx, idx, 1.0 / area));
+    }
+
+    h2.setFromTriplets(triplets.begin(), triplets.end());
+    return h2;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 /*
@@ -79,7 +118,24 @@ SparseMatrix<double> VertexPositionGeometry::buildHodgeStar2Form() const {
 SparseMatrix<double> VertexPositionGeometry::buildExteriorDerivative0Form() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nEdges = mesh.nEdges();
+    size_t nVertices = mesh.nVertices();
+    SparseMatrix<double> d0(nEdges, nVertices);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Edge e : mesh.edges()) {
+        size_t idxEdge = e.getIndex();
+        Vertex first = e.firstVertex();
+        Vertex second = e.secondVertex();
+        size_t idxFirstVert = first.getIndex();
+        size_t idxSecondVert = second.getIndex();
+        triplets.push_back(Eigen::Triplet<double>(idxEdge, idxFirstVert, -1.0));
+        triplets.push_back(Eigen::Triplet<double>(idxEdge, idxSecondVert, 1.0));
+    }
+
+    d0.setFromTriplets(triplets.begin(), triplets.end());
+    return d0;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 /*
@@ -91,7 +147,24 @@ SparseMatrix<double> VertexPositionGeometry::buildExteriorDerivative0Form() cons
 SparseMatrix<double> VertexPositionGeometry::buildExteriorDerivative1Form() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nEdges = mesh.nEdges();
+    size_t nFaces = mesh.nFaces();
+    SparseMatrix<double> d1(nFaces, nEdges);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Face f : mesh.faces()) {
+        size_t idxFace = f.getIndex();
+        for (Halfedge he : f.adjacentHalfedges()) {
+            size_t idxEdge = he.edge().getIndex();
+            // If the half edge has same orientation with edge, set v to 1, else -1.
+            double v = he.orientation() ? 1.0 : -1.0;
+            triplets.push_back(Eigen::Triplet<double>(idxFace, idxEdge, v));
+        }
+    }
+
+    d1.setFromTriplets(triplets.begin(), triplets.end());
+    return d1;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 } // namespace surface
