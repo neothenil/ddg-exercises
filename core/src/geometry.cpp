@@ -397,7 +397,28 @@ std::pair<double, double> VertexPositionGeometry::principalCurvatures(Vertex v) 
 SparseMatrix<double> VertexPositionGeometry::laplaceMatrix() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nVertices = mesh.nVertices();
+    SparseMatrix<double> matrix(nVertices, nVertices);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Vertex v : mesh.vertices()) {
+        size_t row = v.getIndex();
+        double diag = 0.0;
+        for (Halfedge outgoing : v.outgoingHalfedges()) {
+            size_t col = outgoing.tipVertex().getIndex();
+            double cotan1 = cotan(outgoing);
+            double cotan2 = cotan(outgoing.twin());
+            double elementVal = 0.5 * (cotan1 + cotan2);
+            diag += elementVal;
+            triplets.push_back(Eigen::Triplet<double>(row, col, -elementVal));
+        }
+        diag += 1e-8;  // shift the diagonal element by a small constant
+        triplets.push_back(Eigen::Triplet<double>(row, row, diag));
+    }
+
+    matrix.setFromTriplets(triplets.begin(), triplets.end());
+    return matrix;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 /*
@@ -409,7 +430,19 @@ SparseMatrix<double> VertexPositionGeometry::laplaceMatrix() const {
 SparseMatrix<double> VertexPositionGeometry::massMatrix() const {
 
     // TODO
-    return identityMatrix<double>(1); // placeholder
+    size_t nVertices = mesh.nVertices();
+    SparseMatrix<double> matrix(nVertices, nVertices);
+    std::vector<Eigen::Triplet<double>> triplets;
+
+    for (Vertex v : mesh.vertices()) {
+        size_t idx = v.getIndex();
+        double area = barycentricDualArea(v);
+        triplets.push_back(Eigen::Triplet<double>(idx, idx, area));
+    }
+
+    matrix.setFromTriplets(triplets.begin(), triplets.end());
+    return matrix;
+    // return identityMatrix<double>(1); // placeholder
 }
 
 /*
