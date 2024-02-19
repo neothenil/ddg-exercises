@@ -1,4 +1,5 @@
 #include "solvers.h"
+#include "geometrycentral/numerical/linear_solvers.h"
 
 /*
  * Compute the inverse of a sparse diagonal matrix.
@@ -28,7 +29,11 @@ SparseMatrix<double> sparseInverseDiagonal(SparseMatrix<double>& M) {
 double residual(const SparseMatrix<std::complex<double>>& A, const Vector<std::complex<double>>& x) {
 
     // TODO
-    return 0; // placeholder
+    Vector<std::complex<double>> Ax = A * x;
+    std::complex<double> lambda = x.dot(Ax);
+    Vector<std::complex<double>> residual = Ax - lambda * x;
+    return residual.norm();
+    // return 0; // placeholder
 }
 
 /*
@@ -40,5 +45,25 @@ double residual(const SparseMatrix<std::complex<double>>& A, const Vector<std::c
 Vector<std::complex<double>> solveInversePowerMethod(const SparseMatrix<std::complex<double>>& A) {
 
     // TODO
-    return Vector<std::complex<double>>::Zero(1);
+    SparseMatrix<std::complex<double>> localA = A;
+    size_t N = A.rows();
+    Vector<std::complex<double>> y = Vector<std::complex<double>>::Zero(N);
+    y(0) = 1.0;
+    PositiveDefiniteSolver<std::complex<double>> solver(localA);
+    while (residual(A, y) > 1.0e-10) {
+        y = solver.solve(y);
+        // center around the origin
+        std::complex<double> avg = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            avg += y(i);
+        }
+        avg /= (double)N;
+        for (size_t i = 0; i < N; ++i) {
+            y(i) -= avg;
+        }
+        // normalize y
+        y.normalize();
+    }
+    return y;
+    // return Vector<std::complex<double>>::Zero(1);
 }
